@@ -10,4 +10,6 @@ export const dynamoDb = DynamoDBDocumentClient.from(client, {
   },
 });
 
-export const TABLE_NAME = process.env['TABLE.NAME'] ?? '';
+// 👇 Standard dot notation for TABLE_NAME, bracket notation for TABLE.NAME
+export const TABLE_NAME =
+  process.env.TABLE_NAME ?? process.env['TABLE.NAME'] ?? '';
