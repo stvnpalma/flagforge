@@ -19,6 +19,7 @@
     "@aws-sdk/client-dynamodb": "^3.1052.0",
     "@aws-sdk/lib-dynamodb": "^3.1052.0",
     "@eslint/js": "^10.0.1",
+    "@types/aws-lambda": "^8.10.161",
     "@types/jest": "^30",
     "@types/node": "^24.10.1",
     "@typescript-eslint/eslint-plugin": "^8.59.4",
