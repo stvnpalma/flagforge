@@ -8,6 +8,11 @@
       "key": "baseUrl",
       "value": "https://your-api-id.execute-api.us-east-1.amazonaws.com/prod",
       "type": "string"
+    },
+    {
+      "key": "projectId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -34,6 +39,20 @@
                 }
               }
             }
+          }
+        },
+        {
+          "name": "List Projects",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/projects"
+          }
+        },
+        {
+          "name": "Get Project",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/projects/{{projectId}}"
           }
         }
       ]
