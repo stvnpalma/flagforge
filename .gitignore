@@ -1,8 +1,13 @@
-*.js
-!jest.config.js
-*.d.ts
-node_modules
+# Dependencies
+node_modules/
 
-# CDK asset staging directory
-.cdk.staging
-cdk.out
+# Build outputs (Ignore the whole dist folder)
+dist/
+
+# CDK asset staging directories
+.cdk.staging/
+cdk.out/
+
+# Local Environment & Deployment Outputs
+.env.local
+cdk-outputs.json

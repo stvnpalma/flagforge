@@ -6,12 +6,7 @@ const config: Config = {
   roots: ['<rootDir>/src', '<rootDir>/test'],
   testMatch: ['**/*.test.ts'],
   transform: {
-    '^.+\\.tsx?$': [
-      'ts-jest',
-      {
-        tsconfig: 'tsconfig.json',
-      },
-    ],
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.json' }],
   },
   moduleNameMapper: {
     '^@src/(.*)$': '<rootDir>/src/$1',
@@ -28,6 +23,7 @@ const config: Config = {
   },
   clearMocks: true,
   verbose: true,
+  globalSetup: './test/setup/globalSetup.ts',
 };
 
 export default config;

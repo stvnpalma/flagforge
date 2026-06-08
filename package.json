@@ -9,11 +9,13 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "cdk": "cdk",
+    "deploy": "cdk deploy --outputs-file cdk-outputs.json && gh variable set API_URL --body $(node -e \"console.log(require('./cdk-outputs.json').FlagforgeStack.ApiUrl)\")",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:integration": "jest --testPathPatterns=integration --runInBand"
   },
   "devDependencies": {
     "@aws-sdk/client-dynamodb": "^3.1052.0",
@@ -25,6 +27,7 @@
     "@typescript-eslint/eslint-plugin": "^8.59.4",
     "@typescript-eslint/parser": "^8.59.4",
     "aws-cdk": "2.1121.0",
+    "dotenv": "^17.4.2",
     "esbuild": "^0.28.0",
     "eslint": "^10.4.0",
     "eslint-config-prettier": "^10.1.8",
@@ -39,6 +42,7 @@
   },
   "dependencies": {
     "aws-cdk-lib": "^2.257.0",
+    "axios": "^1.17.0",
     "constructs": "^10.5.0"
   },
   "engines": {

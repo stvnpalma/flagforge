@@ -18,6 +18,9 @@ jobs:
     name: Lint · Typecheck · Test
     runs-on: ubuntu-latest
 
+    env:
+      API_URL: ${{ vars.API_URL }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
