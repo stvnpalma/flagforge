@@ -17,6 +17,7 @@ export class FlagForgeApi extends RestApi {
     });
 
     const projects = this.root.addResource('projects');
+    const project = projects.addResource('{projectId}');
 
     const createProjectFn = new FlagForgeFunction(
       scope,
@@ -25,10 +26,27 @@ export class FlagForgeApi extends RestApi {
         handlerPath: 'projects/createProject.ts',
         table,
         description: 'Creates a new FlagForge project',
+        dynamoActions: ['dynamodb:PutItem'],
       },
     );
 
+    const listProjectsFn = new FlagForgeFunction(scope, 'ListProjectFunction', {
+      handlerPath: 'projects/listProjects.ts',
+      table,
+      description: 'Lists all FlagForge projects',
+      dynamoActions: ['dynamodb:Query'],
+    });
+
+    const getProjectFn = new FlagForgeFunction(scope, 'GetProjectFunction', {
+      handlerPath: 'projects/getProject.ts',
+      table,
+      description: 'Gets a single Flag Forge project by Id',
+      dynamoActions: ['dynamodb:GetItem'],
+    });
+
     projects.addMethod('POST', new LambdaIntegration(createProjectFn));
+    projects.addMethod('GET', new LambdaIntegration(listProjectsFn));
+    project.addMethod('GET', new LambdaIntegration(getProjectFn));
 
     new CfnOutput(scope, 'ApiUrl', {
       value: this.url,
