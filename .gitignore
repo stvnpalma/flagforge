@@ -6,4 +6,8 @@ dist/
 
 # CDK asset staging directories
 .cdk.staging/
-cdk.out/.env.local
+cdk.out/
+
+# Local Environment & Deployment Outputs
+.env.local
+cdk-outputs.json
