@@ -52,5 +52,35 @@ export class FlagForgeApi extends RestApi {
       value: this.url,
       description: 'API Gateway base URL',
     });
+    const environments = project.addResource('environments');
+
+    const createEnvironmentFn = new FlagForgeFunction(
+      scope,
+      'CreateEnvironmentFunction',
+      {
+        handlerPath: 'environments/createEnvironment.ts',
+        table,
+        description: 'Creates a new environment within a project',
+        dynamoActions: [
+          'dynamodb:PutItem',
+          'dynamodb:GetItem',
+          'dynamodb:ConditionCheckItem',
+        ],
+      },
+    );
+
+    const listEnvironmentsFn = new FlagForgeFunction(
+      scope,
+      'ListEnvironmentsFunction',
+      {
+        handlerPath: 'environments/listEnvironments.ts',
+        table,
+        description: 'Lists all environments for a project',
+        dynamoActions: ['dynamodb:Query'],
+      },
+    );
+
+    environments.addMethod('POST', new LambdaIntegration(createEnvironmentFn));
+    environments.addMethod('GET', new LambdaIntegration(listEnvironmentsFn));
   }
 }
