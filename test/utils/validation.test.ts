@@ -2,11 +2,12 @@ import { ValidationError } from '../../src/types/errors';
 import {
   optionalString,
   parseBody,
+  requireBoolean,
   requireString,
+  validateFlagKey,
 } from '../../src/utils/validation';
 
 describe('parseBody()', () => {
-  // FIX 2: Removed 'async' from all the test blocks down below
   it('throw ValidationError when body is null', () => {
     expect(() => parseBody(null)).toThrow(ValidationError);
     expect(() => parseBody(null)).toThrow('Request body is required');
@@ -57,5 +58,39 @@ describe('optionalString()', () => {
 
   it('throws ValidationError when field is present but empty', () => {
     expect(() => optionalString({ desc: '' }, 'desc')).toThrow(ValidationError);
+  });
+});
+
+describe('requireBoolean', () => {
+  it('returns true for boolean true', () => {
+    expect(requireBoolean({ enabled: true }, 'enabled')).toBe(true);
+  });
+
+  it('throws ValidationError when field is missing', () => {
+    expect(() => requireBoolean({}, 'enabled')).toThrow(ValidationError);
+  });
+
+  it('throws ValidationError when field is a string', () => {
+    expect(() => requireBoolean({ enabled: 'true' }, 'enabled')).toThrow(
+      ValidationError,
+    );
+  });
+});
+
+describe('validateFlagKey()', () => {
+  it('accepts lowercase, numbers, hyphens', () => {
+    expect(validateFlagKey('new-checkout-flow-2')).toBe('new-checkout-flow-2');
+  });
+
+  it('rejects uppercase letters', () => {
+    expect(() => validateFlagKey('New Checkout')).toThrow(ValidationError);
+  });
+
+  it('rejects spaces', () => {
+    expect(() => validateFlagKey('new checkout')).toThrow(ValidationError);
+  });
+
+  it('rejects special character', () => {
+    expect(() => validateFlagKey('new_checkout@flow')).toThrow(ValidationError);
   });
 });

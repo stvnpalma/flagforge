@@ -82,5 +82,69 @@ export class FlagForgeApi extends RestApi {
 
     environments.addMethod('POST', new LambdaIntegration(createEnvironmentFn));
     environments.addMethod('GET', new LambdaIntegration(listEnvironmentsFn));
+
+    const flags = project.addResource('flags');
+    const flag = flags.addResource('{flagKey}');
+    const flagEnvironments = flag.addResource('environments');
+    const flagEnvironment = flagEnvironments.addResource('{envId}');
+
+    const createFlagFn = new FlagForgeFunction(scope, 'CreateFlagFunction', {
+      handlerPath: 'flags/createFlag.ts',
+      table,
+      description: 'Creates a new feature flag definition',
+      dynamoActions: [
+        'dynamodb:PutItem',
+        'dynamodb:GetItem',
+        'dynamodb:TransactWriteCommand',
+        'dynamodb:ConditionCheckItem',
+      ],
+    });
+
+    const listFlagsFn = new FlagForgeFunction(scope, 'ListFlagsFunction', {
+      handlerPath: 'flags/listFlags.ts',
+      table,
+      description: 'Lists all flag definitions for a project',
+      dynamoActions: ['dynamodb:Query'],
+    });
+
+    const getFlagFn = new FlagForgeFunction(scope, 'GetFlagFunction', {
+      handlerPath: 'flags/getFlag.ts',
+      table,
+      description: 'Gets a single flag definition',
+      dynamoActions: ['dynamodb:GetItem'],
+    });
+
+    const setFlagStateFn = new FlagForgeFunction(
+      scope,
+      'SetFlagStateFunction',
+      {
+        handlerPath: 'flags/setFlagState.ts',
+        table,
+        description: 'Sets a flag enabled/disabled state for an environment',
+        dynamoActions: [
+          'dynamodb:PutItem',
+          'dynamodb:GetItem',
+          'dynamodb:TransactWriteCommand',
+          'dynamodb:ConditionCheckItem',
+        ],
+      },
+    );
+
+    const getFlagStateFn = new FlagForgeFunction(
+      scope,
+      'GetFlagStateFunction',
+      {
+        handlerPath: 'flags/getFlagState.ts',
+        table,
+        description: 'Gets a flag state for a specific environment',
+        dynamoActions: ['dynamodb:GetItem'],
+      },
+    );
+
+    flags.addMethod('POST', new LambdaIntegration(createFlagFn));
+    flags.addMethod('GET', new LambdaIntegration(listFlagsFn));
+    flag.addMethod('GET', new LambdaIntegration(getFlagFn));
+    flagEnvironment.addMethod('PUT', new LambdaIntegration(setFlagStateFn));
+    flagEnvironment.addMethod('GET', new LambdaIntegration(getFlagStateFn));
   }
 }

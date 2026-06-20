@@ -13,6 +13,11 @@
       "key": "projectId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "envId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -69,6 +74,58 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/projects/{{projectId}}/environments"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Flags",
+      "item": [
+        {
+          "name": "Create Flag",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/projects/{{projectId}}/flags",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flagKey\": \"new-checkout-flow\",\n  \"name\": \"New checkout flow\",\n  \"description\": \"Rolls out the redesigned checkout\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "List Flags",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/projects/{{projectId}}/flags"
+          }
+        },
+        {
+          "name": "Get Flag",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/projects/{{projectId}}/flags/new-checkout-flow"
+          }
+        },
+        {
+          "name": "Set Flag State",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/projects/{{projectId}}/flags/new-checkout-flow/environments/{{envId}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Get Flag State",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/projects/{{projectId}}/flags/new-checkout-flow/environments/{{envId}}"
           }
         }
       ]

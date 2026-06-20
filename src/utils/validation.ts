@@ -52,3 +52,25 @@ export function optionalString(
   }
   return value.trim();
 }
+
+export function requireBoolean(
+  body: Record<string, unknown>,
+  field: string,
+): boolean {
+  const value = body[field];
+  if (typeof value !== 'boolean') {
+    throw new ValidationError(`$'{field}'is required and must be a boolean`);
+  }
+  return value;
+}
+
+const FLAG_KEY_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+export function validateFlagKey(flagKey: string): string {
+  if (!FLAG_KEY_PATTERN.test(flagKey)) {
+    throw new ValidationError(
+      "'flagKey' must be lowercase letters, numbers, and hyphens only (e.g. 'new-checkout-flow')",
+    );
+  }
+  return flagKey;
+}
