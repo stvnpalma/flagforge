@@ -6,6 +6,24 @@ const DEFAULT_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
 };
 
+/**
+ * A strict Type Guard to verify an unknown error matches our custom error signature.
+ * This bypasses esbuild's minification prototype-stripping issue safely without using 'any'.
+ */
+function isFlagForgeError(error: unknown): error is FlagForgeError {
+  if (error instanceof FlagForgeError) {
+    return true;
+  }
+
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'statusCode' in error &&
+    'message' in error &&
+    typeof (error as Record<string, unknown>).statusCode === 'number'
+  );
+}
+
 export function ok(data: unknown): HttpResponse {
   const body: ApiResponse<unknown> = { success: true, data };
   return {
@@ -33,7 +51,7 @@ export function noContent(): HttpResponse {
 }
 
 export function errorResponse(error: unknown): HttpResponse {
-  if (error instanceof FlagForgeError) {
+  if (isFlagForgeError(error)) {
     const body: ApiResponse<never> = {
       success: false,
       error: error.message,
