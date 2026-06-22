@@ -11,3 +11,6 @@ cdk.out/
 # Local Environment & Deployment Outputs
 .env.local
 cdk-outputs.json
+
+# IDE Settings
+.vscode/

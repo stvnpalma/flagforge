@@ -7,7 +7,7 @@ import type {
 } from '@src/types/entities';
 import axios, { type AxiosResponse } from 'axios';
 
-const BASE_URL = process.env['API_URL'] ?? '';
+const BASE_URL = process.env.API_URL ?? '';
 
 describe('Flags API — integration', () => {
   let projectId: string;
@@ -22,13 +22,23 @@ describe('Flags API — integration', () => {
       await axios.post(`${BASE_URL}/projects`, {
         name: 'Flags Integration Test Project',
       });
-    projectId = projectRes.data.data!.projectId;
+
+    if (!projectRes.data.data) {
+      throw new Error('Failed to create project: API response data is missing');
+    }
+    projectId = projectRes.data.data.projectId;
 
     const envRes: AxiosResponse<ApiResponse<EnvironmentEntity>> =
       await axios.post(`${BASE_URL}/projects/${projectId}/environments`, {
         name: 'staging',
       });
-    envId = envRes.data.data!.envId;
+
+    if (!envRes.data.data) {
+      throw new Error(
+        'Failed to create environment: API response data is missing',
+      );
+    }
+    envId = envRes.data.data.envId;
   });
 
   it('creates a flag, sets its state, and verifies the state — full lifecycle', async () => {
