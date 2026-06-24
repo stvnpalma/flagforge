@@ -3,10 +3,25 @@
     "name": "FlagForge API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{bearerToken}}",
+        "type": "string"
+      }
+    ]
+  },
   "variable": [
     {
       "key": "baseUrl",
-      "value": "https://your-api-id.execute-api.us-east-1.amazonaws.com/prod",
+      "value": "https://bh78ow1udg.execute-api.us-east-1.amazonaws.com/prod",
+      "type": "string"
+    },
+    {
+      "key": "bearerToken",
+      "value": "PASTE_YOUR_COGNITO_ID_TOKEN_HERE",
       "type": "string"
     },
     {
@@ -145,6 +160,24 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/projects/{{projectId}}/environments/{{envId}}/evaluate/dark-mode"
+          }
+        }
+      ]
+    },
+    {
+      "name": "API Keys",
+      "item": [
+        {
+          "name": "Create API Key",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api-keys",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"keyName\": \"Development Key\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
           }
         }
       ]

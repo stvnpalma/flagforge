@@ -20,6 +20,13 @@ jobs:
 
     env:
       API_URL: ${{ vars.API_URL }}
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
+      COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
+      COGNITO_TEST_USERNAME: ${{ secrets.COGNITO_TEST_USERNAME }}
+      COGNITO_TEST_PASSWORD: ${{ secrets.COGNITO_TEST_PASSWORD }}
 
     steps:
       - name: Checkout repository

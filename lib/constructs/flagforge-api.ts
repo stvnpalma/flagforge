@@ -1,11 +1,20 @@
 import { CfnOutput, Duration } from 'aws-cdk-lib';
-import { Cors, LambdaIntegration, RestApi } from 'aws-cdk-lib/aws-apigateway';
+import {
+  AuthorizationType,
+  CognitoUserPoolsAuthorizer,
+  Cors,
+  IdentitySource,
+  LambdaIntegration,
+  RequestAuthorizer,
+  RestApi,
+} from 'aws-cdk-lib/aws-apigateway';
 import type { Table } from 'aws-cdk-lib/aws-dynamodb';
 import type { Construct } from 'constructs';
+import type { FlagForgeAuth } from './flagforge-auth';
 import { FlagForgeFunction } from './flagforge-function';
 
 export class FlagForgeApi extends RestApi {
-  constructor(scope: Construct, id: string, table: Table) {
+  constructor(scope: Construct, id: string, table: Table, auth: FlagForgeAuth) {
     super(scope, id, {
       restApiName: 'FlagForge API',
       description: 'Feature flag management and evaluation API',
@@ -15,6 +24,34 @@ export class FlagForgeApi extends RestApi {
         maxAge: Duration.days(1),
       },
     });
+
+    const cognitoAuthorizer = new CognitoUserPoolsAuthorizer(
+      scope,
+      'CognitoAuthorizer',
+      { cognitoUserPools: [auth] },
+    );
+
+    const apiKeyAuthorizerFn = new FlagForgeFunction(
+      scope,
+      'ApiKeyAuthorizerFunction',
+      {
+        handlerPath: 'auth/apiKeyAuthorizer.ts',
+        table,
+        description: 'Verifies x-api-key header for evaluation routes',
+        dynamoActions: ['dynamodb:GetItem'],
+        timeoutSeconds: 3,
+      },
+    );
+
+    const apiKeyAuthorizer = new RequestAuthorizer(
+      scope,
+      'ApiKeyRequestAuthorizer',
+      {
+        handler: apiKeyAuthorizerFn,
+        identitySources: [IdentitySource.header('x-api-key')],
+        resultsCacheTtl: Duration.minutes(5),
+      },
+    );
 
     const projects = this.root.addResource('projects');
     const project = projects.addResource('{projectId}');
@@ -44,9 +81,18 @@ export class FlagForgeApi extends RestApi {
       dynamoActions: ['dynamodb:GetItem'],
     });
 
-    projects.addMethod('POST', new LambdaIntegration(createProjectFn));
-    projects.addMethod('GET', new LambdaIntegration(listProjectsFn));
-    project.addMethod('GET', new LambdaIntegration(getProjectFn));
+    projects.addMethod('POST', new LambdaIntegration(createProjectFn), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: AuthorizationType.COGNITO,
+    });
+    projects.addMethod('GET', new LambdaIntegration(listProjectsFn), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: AuthorizationType.COGNITO,
+    });
+    project.addMethod('GET', new LambdaIntegration(getProjectFn), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: AuthorizationType.COGNITO,
+    });
 
     new CfnOutput(scope, 'ApiUrl', {
       value: this.url,
@@ -81,8 +127,14 @@ export class FlagForgeApi extends RestApi {
       },
     );
 
-    environments.addMethod('POST', new LambdaIntegration(createEnvironmentFn));
-    environments.addMethod('GET', new LambdaIntegration(listEnvironmentsFn));
+    environments.addMethod('POST', new LambdaIntegration(createEnvironmentFn), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: AuthorizationType.COGNITO,
+    });
+    environments.addMethod('GET', new LambdaIntegration(listEnvironmentsFn), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: AuthorizationType.COGNITO,
+    });
 
     const flags = project.addResource('flags');
     const flag = flags.addResource('{flagKey}');
@@ -142,11 +194,42 @@ export class FlagForgeApi extends RestApi {
       },
     );
 
-    flags.addMethod('POST', new LambdaIntegration(createFlagFn));
-    flags.addMethod('GET', new LambdaIntegration(listFlagsFn));
-    flag.addMethod('GET', new LambdaIntegration(getFlagFn));
-    flagEnvironment.addMethod('PUT', new LambdaIntegration(setFlagStateFn));
-    flagEnvironment.addMethod('GET', new LambdaIntegration(getFlagStateFn));
+    flags.addMethod('POST', new LambdaIntegration(createFlagFn), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: AuthorizationType.COGNITO,
+    });
+    flags.addMethod('GET', new LambdaIntegration(listFlagsFn), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: AuthorizationType.COGNITO,
+    });
+    flag.addMethod('GET', new LambdaIntegration(getFlagFn), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: AuthorizationType.COGNITO,
+    });
+    flagEnvironment.addMethod('PUT', new LambdaIntegration(setFlagStateFn), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: AuthorizationType.COGNITO,
+    });
+    flagEnvironment.addMethod('GET', new LambdaIntegration(getFlagStateFn), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: AuthorizationType.COGNITO,
+    });
+
+    const apiKeys = project.addResource('api-keys');
+    const createApiKeyFn = new FlagForgeFunction(
+      scope,
+      'CreateApiKeyFunction',
+      {
+        handlerPath: 'apikeys/createApiKey.ts',
+        table,
+        description: 'Generates a new API key for a project',
+        dynamoActions: ['dynamodb:PutItem'],
+      },
+    );
+    apiKeys.addMethod('POST', new LambdaIntegration(createApiKeyFn), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: AuthorizationType.COGNITO,
+    });
 
     const environment = environments.addResource('{envId}');
     const evaluate = environment.addResource('evaluate');
@@ -177,10 +260,17 @@ export class FlagForgeApi extends RestApi {
       },
     );
 
-    evaluate.addMethod('GET', new LambdaIntegration(evaluateFlagsFn));
+    evaluate.addMethod('GET', new LambdaIntegration(evaluateFlagsFn), {
+      authorizer: apiKeyAuthorizer,
+      authorizationType: AuthorizationType.CUSTOM,
+    });
     evaluateFlagResource.addMethod(
       'GET',
       new LambdaIntegration(evaluateSingleFlagFn),
+      {
+        authorizer: apiKeyAuthorizer,
+        authorizationType: AuthorizationType.CUSTOM,
+      },
     );
   }
 }

@@ -5,21 +5,32 @@ import type {
   FlagEnvironmentEntity,
   ProjectEntity,
 } from '@src/types/entities';
-import axios, { type AxiosResponse } from 'axios';
+import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
+import { getTestUserToken } from '../setup/auth';
 
 const BASE_URL = process.env.API_URL ?? '';
 
 describe('Flags API — integration', () => {
   let projectId: string;
   let envId: string;
+  let client: AxiosInstance;
 
   beforeAll(async () => {
     if (!BASE_URL) {
       throw new Error('API_URL environment variable is required');
     }
 
+    const token = await getTestUserToken();
+
+    client = axios.create({
+      baseURL: BASE_URL,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
     const projectRes: AxiosResponse<ApiResponse<ProjectEntity>> =
-      await axios.post(`${BASE_URL}/projects`, {
+      await client.post('/projects', {
         name: 'Flags Integration Test Project',
       });
 
@@ -29,7 +40,7 @@ describe('Flags API — integration', () => {
     projectId = projectRes.data.data.projectId;
 
     const envRes: AxiosResponse<ApiResponse<EnvironmentEntity>> =
-      await axios.post(`${BASE_URL}/projects/${projectId}/environments`, {
+      await client.post(`/projects/${projectId}/environments`, {
         name: 'staging',
       });
 
@@ -42,8 +53,8 @@ describe('Flags API — integration', () => {
   });
 
   it('creates a flag, sets its state, and verifies the state — full lifecycle', async () => {
-    const createRes: AxiosResponse<ApiResponse<FlagEntity>> = await axios.post(
-      `${BASE_URL}/projects/${projectId}/flags`,
+    const createRes: AxiosResponse<ApiResponse<FlagEntity>> = await client.post(
+      `/projects/${projectId}/flags`,
       {
         flagKey: 'new-checkout-flow',
         name: 'New checkout flow',
@@ -55,8 +66,8 @@ describe('Flags API — integration', () => {
     expect(createRes.data.data?.flagKey).toBe('new-checkout-flow');
 
     const setRes: AxiosResponse<ApiResponse<FlagEnvironmentEntity>> =
-      await axios.put(
-        `${BASE_URL}/projects/${projectId}/flags/new-checkout-flow/environments/${envId}`,
+      await client.put(
+        `/projects/${projectId}/flags/new-checkout-flow/environments/${envId}`,
         { enabled: true },
       );
 
@@ -64,8 +75,8 @@ describe('Flags API — integration', () => {
     expect(setRes.data.data?.enabled).toBe(true);
 
     const getRes: AxiosResponse<ApiResponse<FlagEnvironmentEntity>> =
-      await axios.get(
-        `${BASE_URL}/projects/${projectId}/flags/new-checkout-flow/environments/${envId}`,
+      await client.get(
+        `/projects/${projectId}/flags/new-checkout-flow/environments/${envId}`,
       );
 
     expect(getRes.status).toBe(200);
@@ -74,7 +85,7 @@ describe('Flags API — integration', () => {
 
   it('returns 400 for an invalid flagKey format', async () => {
     try {
-      await axios.post(`${BASE_URL}/projects/${projectId}/flags`, {
+      await client.post(`/projects/${projectId}/flags`, {
         flagKey: 'Invalid Key!',
         name: 'Bad key',
       });
@@ -89,13 +100,13 @@ describe('Flags API — integration', () => {
   });
 
   it('returns 409 when flag key already exists', async () => {
-    await axios.post(`${BASE_URL}/projects/${projectId}/flags`, {
+    await client.post(`/projects/${projectId}/flags`, {
       flagKey: 'duplicate-flag',
       name: 'First',
     });
 
     try {
-      await axios.post(`${BASE_URL}/projects/${projectId}/flags`, {
+      await client.post(`/projects/${projectId}/flags`, {
         flagKey: 'duplicate-flag',
         name: 'Second',
       });
@@ -111,8 +122,8 @@ describe('Flags API — integration', () => {
 
   it('returns 404 when setting state for a non-existent flag', async () => {
     try {
-      await axios.put(
-        `${BASE_URL}/projects/${projectId}/flags/does-not-exist/environments/${envId}`,
+      await client.put(
+        `/projects/${projectId}/flags/does-not-exist/environments/${envId}`,
         { enabled: true },
       );
       throw new Error('Expected request to throw 404 Not Found');

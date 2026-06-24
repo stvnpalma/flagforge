@@ -1,56 +1,71 @@
 import type { ApiResponse } from '@src/types/api';
 import type { EnvironmentEntity, ProjectEntity } from '@src/types/entities';
-import axios, { type AxiosResponse } from 'axios';
+import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
+import { getTestUserToken } from '../setup/auth';
 
 const BASE_URL = process.env.API_URL ?? '';
 
 describe('Evaluation API — integration', () => {
   let projectId: string;
   let envId: string;
+  let managementClient: AxiosInstance;
 
   beforeAll(async () => {
     if (!BASE_URL) {
       throw new Error('API_URL environment variable is required');
     }
 
+    const token = await getTestUserToken();
+    managementClient = axios.create({
+      baseURL: BASE_URL,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
     const projectRes: AxiosResponse<ApiResponse<ProjectEntity>> =
-      await axios.post(`${BASE_URL}/projects`, {
+      await managementClient.post('/projects', {
         name: 'Evaluation Integration Test Project',
       });
 
-    if (!projectRes.data.data) {
-      throw new Error('Failed to create project: API response data is missing');
-    }
-    projectId = projectRes.data.data.projectId;
+    projectId = projectRes.data.data?.projectId ?? '';
+    if (!projectId)
+      throw new Error('Project ID was not returned from setup API');
 
     const envRes: AxiosResponse<ApiResponse<EnvironmentEntity>> =
-      await axios.post(`${BASE_URL}/projects/${projectId}/environments`, {
+      await managementClient.post(`/projects/${projectId}/environments`, {
         name: 'production',
       });
 
-    if (!envRes.data.data) {
-      throw new Error(
-        'Failed to create environment: API response data is missing',
-      );
-    }
-    envId = envRes.data.data.envId;
+    envId = envRes.data.data?.envId ?? '';
+    if (!envId)
+      throw new Error('Environment ID was not returned from setup API');
 
-    await axios.post(`${BASE_URL}/projects/${projectId}/flags`, {
+    await managementClient.post(`/projects/${projectId}/flags`, {
       flagKey: 'dark-mode',
       name: 'Dark mode',
     });
 
-    await axios.put(
-      `${BASE_URL}/projects/${projectId}/flags/dark-mode/environments/${envId}`,
+    await managementClient.put(
+      `/projects/${projectId}/flags/dark-mode/environments/${envId}`,
       { enabled: true },
     );
-  });
+  }, 15000);
+
+  async function generateFreshApiKey(): Promise<string> {
+    const keyRes = await managementClient.post(
+      `/projects/${projectId}/api-keys`,
+    );
+    return (keyRes.data as { data: { apiKey: string } }).data.apiKey;
+  }
 
   describe('GET /projects/:projectId/environments/:envId/evaluate', () => {
     it('returns 200 with the flag map for the environment', async () => {
+      const apiKey = await generateFreshApiKey();
       const response: AxiosResponse<ApiResponse<Record<string, boolean>>> =
         await axios.get(
           `${BASE_URL}/projects/${projectId}/environments/${envId}/evaluate`,
+          { headers: { 'x-api-key': apiKey } },
         );
 
       expect(response.status).toBe(200);
@@ -58,9 +73,11 @@ describe('Evaluation API — integration', () => {
     });
 
     it('returns 200 with an empty object for an unknown environment (fail open)', async () => {
+      const apiKey = await generateFreshApiKey();
       const response: AxiosResponse<ApiResponse<Record<string, boolean>>> =
         await axios.get(
           `${BASE_URL}/projects/${projectId}/environments/does-not-exist/evaluate`,
+          { headers: { 'x-api-key': apiKey } },
         );
 
       expect(response.status).toBe(200);
@@ -70,10 +87,12 @@ describe('Evaluation API — integration', () => {
 
   describe('GET /projects/:projectId/environments/:envId/evaluate/:flagKey', () => {
     it('returns enabled true for a known, enabled flag', async () => {
+      const apiKey = await generateFreshApiKey();
       const response: AxiosResponse<
         ApiResponse<{ flagKey: string; enabled: boolean }>
       > = await axios.get(
         `${BASE_URL}/projects/${projectId}/environments/${envId}/evaluate/dark-mode`,
+        { headers: { 'x-api-key': apiKey } },
       );
 
       expect(response.status).toBe(200);
@@ -81,10 +100,12 @@ describe('Evaluation API — integration', () => {
     });
 
     it('returns enabled false (fail closed) for an unknown flag', async () => {
+      const apiKey = await generateFreshApiKey();
       const response: AxiosResponse<
         ApiResponse<{ flagKey: string; enabled: boolean }>
       > = await axios.get(
         `${BASE_URL}/projects/${projectId}/environments/${envId}/evaluate/unknown-flag`,
+        { headers: { 'x-api-key': apiKey } },
       );
 
       expect(response.status).toBe(200);

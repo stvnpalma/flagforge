@@ -1,25 +1,35 @@
 import type { ApiResponse } from '@src/types/api';
 import type { ProjectEntity } from '@src/types/entities';
-import axios, { type AxiosResponse } from 'axios';
+import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
+import { getTestUserToken } from '../setup/auth';
 
 const BASE_URL = process.env.API_URL ?? '';
 
 describe('Projects API — integration', () => {
   let createdProjectId: string;
+  let client: AxiosInstance;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     if (!BASE_URL) {
       throw new Error(
-        'API_URL environment variable is required for integration tests. ' +
-          'Run: API_URL=https://your-api-id.execute-api.region.amazonaws.com/prod npm run test:integration',
+        'API_URL environment variable is required for integration tests.',
       );
     }
+
+    const token = await getTestUserToken();
+
+    client = axios.create({
+      baseURL: BASE_URL,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
   });
 
   describe('POST /projects', () => {
     it('creates a project and returns 201', async () => {
       const response: AxiosResponse<ApiResponse<ProjectEntity>> =
-        await axios.post(`${BASE_URL}/projects`, {
+        await client.post('/projects', {
           name: 'Integration Test Project',
         });
 
@@ -35,7 +45,7 @@ describe('Projects API — integration', () => {
   describe('GET /projects', () => {
     it('returns 200 with array of projects', async () => {
       const response: AxiosResponse<ApiResponse<ProjectEntity[]>> =
-        await axios.get(`${BASE_URL}/projects`);
+        await client.get('/projects');
 
       expect(response.status).toBe(200);
       expect(response.data.success).toBe(true);
@@ -46,7 +56,7 @@ describe('Projects API — integration', () => {
   describe('GET /projects/:projectId', () => {
     it('returns 200 with project when found', async () => {
       const response: AxiosResponse<ApiResponse<ProjectEntity>> =
-        await axios.get(`${BASE_URL}/projects/${createdProjectId}`);
+        await client.get(`/projects/${createdProjectId}`);
 
       expect(response.status).toBe(200);
       expect(response.data.data?.projectId).toBe(createdProjectId);
@@ -54,7 +64,7 @@ describe('Projects API — integration', () => {
 
     it('returns 404 for non-existent project', async () => {
       try {
-        await axios.get(`${BASE_URL}/projects/non-existent-id`);
+        await client.get('/projects/non-existent-id');
         fail('Expected request to throw');
       } catch (error) {
         if (axios.isAxiosError(error)) {

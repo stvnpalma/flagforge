@@ -14,3 +14,5 @@ cdk-outputs.json
 
 # IDE Settings
 .vscode/
+.env.local
+.env.local
