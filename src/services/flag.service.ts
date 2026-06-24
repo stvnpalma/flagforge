@@ -10,16 +10,16 @@ import { dynamoDb, TABLE_NAME } from '../utils/dynamo';
 interface TransactionErrorShape {
   name?: string;
   __type?: string;
-  cancellationReasons?: Array<{
+  cancellationReasons?: {
     Code?: string;
     code?: string;
     Message?: string;
-  }>;
-  CancellationReasons?: Array<{
+  }[];
+  CancellationReasons?: {
     Code?: string;
     code?: string;
     Message?: string;
-  }>;
+  }[];
 }
 
 export async function createFlag(
@@ -70,7 +70,7 @@ export async function createFlag(
       error.__type?.endsWith('TransactionCanceledException')
     ) {
       const reasons =
-        error.cancellationReasons || error.CancellationReasons || [];
+        error.cancellationReasons ?? error.CancellationReasons ?? [];
       const projectFailed =
         reasons[0]?.Code === 'ConditionalCheckFailed' ||
         reasons[0]?.code === 'ConditionalCheckFailed';
@@ -179,7 +179,7 @@ export async function setFlagState(
       error.__type?.endsWith('TransactionCanceledException')
     ) {
       const reasons =
-        error.cancellationReasons || error.CancellationReasons || [];
+        error.cancellationReasons ?? error.CancellationReasons ?? [];
       const envFailed =
         reasons[0]?.Code === 'ConditionalCheckFailed' ||
         reasons[0]?.code === 'ConditionalCheckFailed';

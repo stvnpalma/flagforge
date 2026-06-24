@@ -129,6 +129,25 @@
           }
         }
       ]
+    },
+    {
+      "name": "Evaluation",
+      "item": [
+        {
+          "name": "Evaluate All Flags",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/projects/{{projectId}}/environments/{{envId}}/evaluate"
+          }
+        },
+        {
+          "name": "Evaluate Single Flag",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/projects/{{projectId}}/environments/{{envId}}/evaluate/dark-mode"
+          }
+        }
+      ]
     }
   ]
 }

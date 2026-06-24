@@ -52,6 +52,7 @@ export class FlagForgeApi extends RestApi {
       value: this.url,
       description: 'API Gateway base URL',
     });
+
     const environments = project.addResource('environments');
 
     const createEnvironmentFn = new FlagForgeFunction(
@@ -146,5 +147,40 @@ export class FlagForgeApi extends RestApi {
     flag.addMethod('GET', new LambdaIntegration(getFlagFn));
     flagEnvironment.addMethod('PUT', new LambdaIntegration(setFlagStateFn));
     flagEnvironment.addMethod('GET', new LambdaIntegration(getFlagStateFn));
+
+    const environment = environments.addResource('{envId}');
+    const evaluate = environment.addResource('evaluate');
+    const evaluateFlagResource = evaluate.addResource('{flagKey}');
+
+    const evaluateFlagsFn = new FlagForgeFunction(
+      scope,
+      'EvaluateFlagsFunction',
+      {
+        handlerPath: 'evaluation/evaluateFlags.ts',
+        table,
+        description: 'Evaluates all flag states for an environment (hot path)',
+        dynamoActions: ['dynamodb:Query'],
+        timeoutSeconds: 3,
+      },
+    );
+
+    const evaluateSingleFlagFn = new FlagForgeFunction(
+      scope,
+      'EvaluateSingleFlagFunction',
+      {
+        handlerPath: 'evaluation/evaluateSingleFlag.ts',
+        table,
+        description:
+          'Evaluates a single flag state for an environment (hot path)',
+        dynamoActions: ['dynamodb:GetItem'],
+        timeoutSeconds: 3,
+      },
+    );
+
+    evaluate.addMethod('GET', new LambdaIntegration(evaluateFlagsFn));
+    evaluateFlagResource.addMethod(
+      'GET',
+      new LambdaIntegration(evaluateSingleFlagFn),
+    );
   }
 }
