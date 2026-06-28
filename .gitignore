@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Build outputs (Ignore the whole dist folder)
+dist/
+
+# CDK asset staging directories
+.cdk.staging/
+cdk.out/
+
+# Local Environment & Deployment Outputs
+.env.local
+cdk-outputs.json
+
+# IDE Settings
+.vscode/
+.env.local
+.env.local

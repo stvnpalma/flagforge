@@ -1,0 +1,55 @@
+{
+  "name": "flagforge",
+  "version": "0.1.0",
+  "packageManager": "npm@11.14.1",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "cdk": "cdk",
+    "deploy": "cdk deploy --outputs-file cdk-outputs.json && gh variable set API_URL --body $(node -e \"console.log(require('./cdk-outputs.json').FlagforgeStack.ApiUrl)\")",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "test:integration": "jest --testPathPatterns=integration --runInBand"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.1075.0",
+    "@aws-sdk/client-dynamodb": "^3.1072.0",
+    "@aws-sdk/lib-dynamodb": "^3.1052.0",
+    "@eslint/js": "^10.0.1",
+    "@types/aws-lambda": "^8.10.161",
+    "@types/jest": "^30",
+    "@types/node": "^24.10.1",
+    "@typescript-eslint/eslint-plugin": "^8.59.4",
+    "@typescript-eslint/parser": "^8.59.4",
+    "aws-cdk": "2.1121.0",
+    "aws-sdk-client-mock": "^4.1.0",
+    "aws-sdk-mock": "^6.2.2",
+    "dotenv": "^17.4.2",
+    "esbuild": "^0.28.0",
+    "eslint": "^10.4.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "globals": "^17.6.0",
+    "jest": "^30",
+    "prettier": "^3.8.3",
+    "ts-jest": "^29.4.10",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.59.4"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.257.0",
+    "axios": "^1.17.0",
+    "constructs": "^10.5.0"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  }
+}
