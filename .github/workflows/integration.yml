@@ -1,0 +1,47 @@
+name: Integration tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: 'Deployed API Gateway URL (from the cdk deploy output)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    name: Integration tests (deployed stack)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      API_URL: ${{ inputs.api_url }}
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
+      COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
+      COGNITO_TEST_USERNAME: ${{ secrets.COGNITO_TEST_USERNAME }}
+      COGNITO_TEST_PASSWORD: ${{ secrets.COGNITO_TEST_PASSWORD }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable npm
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run integration tests
+        run: npm run test:integration

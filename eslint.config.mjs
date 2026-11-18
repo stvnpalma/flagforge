@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['cdk.out/**', 'node_modules/**', 'dist/**'],
+    ignores: ['cdk.out/**', 'node_modules/**', 'dist/**', 'coverage/**'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
