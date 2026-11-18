@@ -16,3 +16,4 @@ cdk-outputs.json
 .vscode/
 .env.local
 .env.local
+coverage/

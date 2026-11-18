@@ -5,9 +5,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
     "cdk": "cdk",
     "deploy": "cdk deploy --outputs-file cdk-outputs.json && gh variable set API_URL --body $(node -e \"console.log(require('./cdk-outputs.json').FlagforgeStack.ApiUrl)\")",
     "lint": "eslint .",
@@ -15,7 +13,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "test:integration": "jest --testPathPatterns=integration --runInBand"
+    "test:integration": "jest --testPathPatterns=integration --runInBand",
+    "test": "jest --testPathIgnorePatterns=test/integration",
+    "test:coverage": "jest --coverage --testPathIgnorePatterns=test/integration"
   },
   "devDependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.1075.0",

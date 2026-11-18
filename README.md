@@ -27,14 +27,17 @@ npm run lint:fix
 # Type-check without emitting
 npm run typecheck
 
-# Run all tests
+# Run unit tests
 npm test
 
 # Run tests in watch mode
 npm run test:watch
 
-# Run tests with coverage report
+# Run unit tests with the 80% coverage gate (same check CI runs)
 npm run test:coverage
+
+# Run integration tests against a deployed stack (needs API_URL and AWS/Cognito credentials)
+npm run test:integration
 
 # Synthesise CloudFormation template (no deployment)
 npx cdk synth
@@ -68,14 +71,26 @@ refactor:  code change with no behavior change
 
 ## CI/CD
 
-Every PR targeting `dev` or `main` triggers the GitHub Actions pipeline:
-lint → typecheck → test → cdk synth.
+Every PR targeting `dev` or `main` runs the **CI** workflow
+(`.github/workflows/ci.yml`):
+
+lint → typecheck → unit tests with coverage gate → cdk synth
+
+- **Coverage gate:** Jest enforces an 80% global threshold on statements,
+  branches, functions and lines (`jest.config.ts`). A PR that drops below any
+  of them fails CI.
+- **Integration tests** (`test/integration`) need a deployed stack, so they are
+  not part of PR CI. Run them on demand from the **Integration tests** workflow
+  (Actions tab → Run workflow, passing the API URL from the `cdk deploy`
+  output), or locally with `npm run test:integration`.
+- **Least privilege:** PR jobs use a read-only token and no AWS credentials,
+  except the `cdk synth` step.
 
 ## Project structure
 
 ```
 flagforge/
-├── .github/workflows/   # CI pipeline
+├── .github/workflows/   # CI (PR checks) and on-demand integration tests
 ├── bin/                 # CDK app entry point
 ├── lib/                 # CDK stack definitions
 ├── src/                 # Lambda handler source
