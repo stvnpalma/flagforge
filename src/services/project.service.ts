@@ -12,6 +12,8 @@ export async function createProject(name: string): Promise<ProjectEntity> {
     entityType: 'PROJECT',
     PK: `PROJECT#${projectId}`,
     SK: 'METADATA',
+    GSI1PK: 'PROJECT',
+    GSI1SK: `PROJECT#${projectId}`,
     projectId,
     name,
     createdAt: now,
