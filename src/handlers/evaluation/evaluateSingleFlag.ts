@@ -32,7 +32,7 @@ export const handler = async (
     return response;
   } catch (error) {
     const response = errorResponse(error);
-    logger.info('evaluateSingleFlag failed', {
+    logger.error('evaluateSingleFlag failed', {
       path: event.path,
       method: event.httpMethod,
       statusCode: response.statusCode,
