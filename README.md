@@ -7,10 +7,10 @@ TypeScript, API Gateway, Lambda, and DynamoDB.
 ![Release](https://img.shields.io/github/v/release/stvnpalma/flagforge)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-339933)
 
-**Status:** `v0.1.0` — MVP complete, feature-frozen for review.
+**Status:** `v0.1.1` — MVP complete, feature-frozen for review.
 
 **Demo video:**
-**Release:** [v0.1.0](https://github.com/stvnpalma/flagforge/releases/tag/v0.1.0)
+**Release:** [v0.1.1](https://github.com/stvnpalma/flagforge/releases/tag/v0.1.1)
 
 ---
 
@@ -95,7 +95,7 @@ To instantly test evaluation routing using a generated `ffk_...` API key:
 
 ```bash
 curl -H "x-api-key: ffk_your_api_key_here" \
- [https://09so7h4ql0.execute-api.us-east-1.amazonaws.com/prod/projects/](https://09so7h4ql0.execute-api.us-east-1.amazonaws.com/prod/projects/){projectId}/environments/{envId}/evaluate
+  "https://<api-id>.execute-api.us-east-1.amazonaws.com/prod/projects/{projectId}/environments/{envId}/evaluate"
 ```
 
 Full request/response examples live in the Postman collection at
@@ -157,7 +157,7 @@ npx cdk destroy
 
 ## Testing strategy
 
-- **Unit tests** mock the DynamoDB client (`aws-sdk-mock`) and assert on
+- **Unit tests** mock the DynamoDB client (`aws-sdk-client-mock`) and assert on
   service logic, validation utilities, and handler responses in
   isolation — no AWS calls, runs in CI on every PR.
 - **Integration tests** use Axios against a live deployed stack,
@@ -171,6 +171,11 @@ npm run test:coverage    # unit tests with coverage report
 npm run test:integration # integration tests against API_URL in .env.local
 ```
 
+Integration tests need a deployed stack, so they are not part of PR CI.
+Run them from the **Integration tests** workflow (Actions tab, Run
+workflow, passing the API URL from the `cdk deploy` output) or locally
+with `npm run test:integration`.
+
 Coverage threshold is enforced at 80% (branches, functions, lines,
 statements) — a PR that drops below it fails CI.
 
@@ -178,7 +183,7 @@ statements) — a PR that drops below it fails CI.
 
 ```
 flagforge/
-├── .github/workflows/        # CI pipeline
+├── .github/workflows/        # CI (PR checks) and on-demand integration tests
 ├── bin/                      # CDK app entry point
 ├── lib/
 │   ├── constructs/            # FlagForgeTable, FlagForgeApi, FlagForgeAuth,
@@ -210,12 +215,12 @@ release/*   ← version/changelog prep only, never code changes
 **Commit convention:** `feat:` `fix:` `chore:` `test:` `docs:` `refactor:`
 
 **CI/CD:** every PR targeting `dev` or `main` runs lint → typecheck →
-unit tests → `cdk synth` via GitHub Actions. `main` requires a passing
-PR and cannot be pushed to directly.
+unit tests with the 80% coverage gate → `cdk synth` via GitHub Actions.
+`main` requires a passing PR and cannot be pushed to directly.
 
 ## Roadmap
 
-`v0.1.0` is the complete MVP and the intentional stopping point for this
+`v0.1.1` is the complete MVP and the intentional stopping point for this
 phase — the codebase is frozen here for review. Ideas under
 consideration for a `v0.2.0`, not yet started:
 
@@ -223,8 +228,6 @@ consideration for a `v0.2.0`, not yet started:
 - Percentage-based gradual rollouts
 - A small observability dashboard over the CloudWatch/X-Ray data
 - A published SDK client wrapping the evaluation endpoints
-
-## License
 
 ## License
 
