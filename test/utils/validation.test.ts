@@ -62,19 +62,51 @@ describe('optionalString()', () => {
 });
 
 describe('requireBoolean', () => {
-  it('returns true for boolean true', () => {
+  test('returns true when a valid boolean is provided', () => {
     expect(requireBoolean({ enabled: true }, 'enabled')).toBe(true);
   });
 
-  it('throws ValidationError when field is missing', () => {
-    expect(() => requireBoolean({}, 'enabled')).toThrow(ValidationError);
-  });
+  const cases: [string, Record<string, unknown>, string, string][] = [
+    [
+      'missing field',
+      {},
+      'enabled',
+      "'enabled' is required and must be a boolean",
+    ],
+    [
+      'string instead of boolean',
+      { enabled: 'true' },
+      'enabled',
+      "'enabled' is required and must be a boolean",
+    ],
+    [
+      'number',
+      { enabled: 1 },
+      'enabled',
+      "'enabled' is required and must be a boolean",
+    ],
+    [
+      'null',
+      { enabled: null },
+      'enabled',
+      "'enabled' is required and must be a boolean",
+    ],
+    [
+      'a different field name',
+      {},
+      'active',
+      "'active' is required and must be a boolean",
+    ],
+  ];
 
-  it('throws ValidationError when field is a string', () => {
-    expect(() => requireBoolean({ enabled: 'true' }, 'enabled')).toThrow(
-      ValidationError,
-    );
-  });
+  test.each(cases)(
+    'rejects %s',
+    (_description, body, field, expectedMessage) => {
+      expect(() => requireBoolean(body, field)).toThrow(
+        new ValidationError(expectedMessage),
+      );
+    },
+  );
 });
 
 describe('validateFlagKey()', () => {

@@ -3,13 +3,15 @@ import * as evaluationService from '@src/services/evaluation.service';
 import { makeEvent } from '../../setup/makeEvent';
 
 jest.mock('@src/services/evaluation.service');
+
+const mockLogger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 jest.mock('@src/utils/logger', () => ({
-  createLogger: (): { info: jest.Mock; warn: jest.Mock; error: jest.Mock } => ({
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-  }),
+  createLogger: (): typeof mockLogger => mockLogger,
 }));
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 
 beforeAll(() => {
   jest.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -85,6 +87,10 @@ describe('evaluateSingleFlag handler', () => {
 
     expect(response.statusCode).toBe(400);
     expect(mockEvaluateSingleFlag).not.toHaveBeenCalled();
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      'evaluateSingleFlag failed',
+      expect.objectContaining({ statusCode: 400 }),
+    );
   });
 
   test.each(missingPathParameters)(
@@ -98,6 +104,10 @@ describe('evaluateSingleFlag handler', () => {
 
       expect(response.statusCode).toBe(400);
       expect(mockEvaluateSingleFlag).not.toHaveBeenCalled();
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'evaluateSingleFlag failed',
+        expect.objectContaining({ statusCode: 400 }),
+      );
     },
   );
 
@@ -111,6 +121,14 @@ describe('evaluateSingleFlag handler', () => {
     const response = await handler(event);
 
     expect(response.statusCode).toBe(500);
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      'evaluateSingleFlag failed',
+      expect.objectContaining({ statusCode: 500, error: 'boom' }),
+    );
+    expect(mockLogger.info).not.toHaveBeenCalledWith(
+      'evaluateSingleFlag failed',
+      expect.anything(),
+    );
   });
 
   test('returns 500 when the service rejects with a non-Error value', async () => {
@@ -123,5 +141,13 @@ describe('evaluateSingleFlag handler', () => {
     const response = await handler(event);
 
     expect(response.statusCode).toBe(500);
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      'evaluateSingleFlag failed',
+      expect.objectContaining({ statusCode: 500, error: 'boom' }),
+    );
+    expect(mockLogger.info).not.toHaveBeenCalledWith(
+      'evaluateSingleFlag failed',
+      expect.anything(),
+    );
   });
 });
