@@ -1,5 +1,6 @@
 import { handler } from '@src/handlers/evaluation/evaluateSingleFlag';
 import * as evaluationService from '@src/services/evaluation.service';
+import type { APIGatewayProxyEvent } from 'aws-lambda';
 import { makeEvent } from '../../setup/makeEvent';
 
 jest.mock('@src/services/evaluation.service');
@@ -24,6 +25,22 @@ const mockEvaluateSingleFlag = jest.mocked(
   evaluationService.evaluateSingleFlag,
 );
 
+type AuthorizerContext = APIGatewayProxyEvent['requestContext']['authorizer'];
+
+function evaluationEvent(
+  pathParameters: Record<string, string>,
+  authorizer: AuthorizerContext = { projectId: 'project-123' },
+): APIGatewayProxyEvent {
+  return makeEvent({
+    httpMethod: 'GET',
+    pathParameters,
+    requestContext: {
+      requestId: 'test-request-id',
+      authorizer,
+    } as APIGatewayProxyEvent['requestContext'],
+  });
+}
+
 const fullPathParameters = {
   projectId: 'project-123',
   envId: 'env-456',
@@ -40,11 +57,7 @@ describe('evaluateSingleFlag handler', () => {
   test('returns 200 with enabled true for an enabled flag', async () => {
     mockEvaluateSingleFlag.mockResolvedValueOnce(true);
 
-    const event = makeEvent({
-      httpMethod: 'GET',
-      pathParameters: fullPathParameters,
-    });
-    const response = await handler(event);
+    const response = await handler(evaluationEvent(fullPathParameters));
 
     expect(response.statusCode).toBe(200);
     expect(JSON.parse(response.body)).toEqual({
@@ -61,11 +74,7 @@ describe('evaluateSingleFlag handler', () => {
   test('returns 200 with enabled false for a disabled or unknown flag', async () => {
     mockEvaluateSingleFlag.mockResolvedValueOnce(false);
 
-    const event = makeEvent({
-      httpMethod: 'GET',
-      pathParameters: fullPathParameters,
-    });
-    const response = await handler(event);
+    const response = await handler(evaluationEvent(fullPathParameters));
 
     expect(response.statusCode).toBe(200);
     expect(JSON.parse(response.body)).toEqual({
@@ -96,11 +105,7 @@ describe('evaluateSingleFlag handler', () => {
   test.each(missingPathParameters)(
     'returns 400 when %s',
     async (_label, pathParameters) => {
-      const event = makeEvent({
-        httpMethod: 'GET',
-        pathParameters,
-      });
-      const response = await handler(event);
+      const response = await handler(evaluationEvent(pathParameters));
 
       expect(response.statusCode).toBe(400);
       expect(mockEvaluateSingleFlag).not.toHaveBeenCalled();
@@ -111,14 +116,37 @@ describe('evaluateSingleFlag handler', () => {
     },
   );
 
+  test('returns 403 and evaluates nothing when the key belongs to another project', async () => {
+    const response = await handler(
+      evaluationEvent(fullPathParameters, { projectId: 'project-999' }),
+    );
+
+    expect(response.statusCode).toBe(403);
+    expect(mockEvaluateSingleFlag).not.toHaveBeenCalled();
+  });
+
+  test('returns 403 and evaluates nothing when there is no authorizer context', async () => {
+    const response = await handler(evaluationEvent(fullPathParameters, null));
+
+    expect(response.statusCode).toBe(403);
+    expect(mockEvaluateSingleFlag).not.toHaveBeenCalled();
+  });
+
+  test('logs a denied request with logger.error', async () => {
+    await handler(
+      evaluationEvent(fullPathParameters, { projectId: 'project-999' }),
+    );
+
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      'evaluateSingleFlag failed',
+      expect.objectContaining({ statusCode: 403 }),
+    );
+  });
+
   test('returns 500 when the service throws an Error', async () => {
     mockEvaluateSingleFlag.mockRejectedValueOnce(new Error('boom'));
 
-    const event = makeEvent({
-      httpMethod: 'GET',
-      pathParameters: fullPathParameters,
-    });
-    const response = await handler(event);
+    const response = await handler(evaluationEvent(fullPathParameters));
 
     expect(response.statusCode).toBe(500);
     expect(mockLogger.error).toHaveBeenCalledWith(
@@ -134,11 +162,7 @@ describe('evaluateSingleFlag handler', () => {
   test('returns 500 when the service rejects with a non-Error value', async () => {
     mockEvaluateSingleFlag.mockRejectedValueOnce('boom');
 
-    const event = makeEvent({
-      httpMethod: 'GET',
-      pathParameters: fullPathParameters,
-    });
-    const response = await handler(event);
+    const response = await handler(evaluationEvent(fullPathParameters));
 
     expect(response.statusCode).toBe(500);
     expect(mockLogger.error).toHaveBeenCalledWith(
