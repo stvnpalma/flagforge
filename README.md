@@ -7,10 +7,10 @@ TypeScript, API Gateway, Lambda, and DynamoDB.
 ![Release](https://img.shields.io/github/v/release/stvnpalma/flagforge)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-339933)
 
-**Status:** `v0.1.1` — MVP complete, feature-frozen for review.
+**Status:** `v0.1.2` — MVP complete, feature-frozen for review.
 
 **Demo video:**
-**Release:** [v0.1.1](https://github.com/stvnpalma/flagforge/releases/tag/v0.1.1)
+**Release:** [v0.1.2](https://github.com/stvnpalma/flagforge/releases/tag/v0.1.2)
 
 ---
 
@@ -220,7 +220,7 @@ unit tests with the 80% coverage gate → `cdk synth` via GitHub Actions.
 
 ## Roadmap
 
-`v0.1.1` is the complete MVP and the intentional stopping point for this
+`v0.1.2` is the complete MVP and the intentional stopping point for this
 phase — the codebase is frozen here for review. Ideas under
 consideration for a `v0.2.0`, not yet started:
 
