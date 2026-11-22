@@ -112,4 +112,43 @@ describe('Evaluation API — integration', () => {
       expect(response.data.data?.enabled).toBe(false);
     });
   });
+  describe('API key scoping', () => {
+    const crossProjectRoutes: [string, string][] = [
+      ['evaluate all flags', 'evaluate'],
+      ['evaluate a single flag', 'evaluate/dark-mode'],
+    ];
+
+    it.each(crossProjectRoutes)(
+      'returns 403 when a key from another project is used to %s',
+      async (_description, routeSuffix) => {
+        const otherProjectRes = await managementClient.post<
+          ApiResponse<ProjectEntity>
+        >('/projects', { name: 'Other Project (scoping test)' });
+
+        const otherProjectId = otherProjectRes.data.data?.projectId ?? '';
+        if (!otherProjectId) {
+          throw new Error('Other project ID was not returned from setup API');
+        }
+
+        const apiKey = await generateFreshApiKey();
+        const response = await axios.get<ApiResponse<never>>(
+          `${BASE_URL}/projects/${otherProjectId}/environments/${envId}/${routeSuffix}`,
+          { headers: { 'x-api-key': apiKey }, validateStatus: () => true },
+        );
+
+        expect(response.status).toBe(403);
+      },
+      15000,
+    );
+
+    it('returns 404 when creating a key for a project that does not exist', async () => {
+      const response = await managementClient.post<ApiResponse<never>>(
+        '/projects/does-not-exist/api-keys',
+        undefined,
+        { validateStatus: () => true },
+      );
+
+      expect(response.status).toBe(404);
+    });
+  });
 });
