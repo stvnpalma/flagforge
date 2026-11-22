@@ -32,3 +32,9 @@ export class UnauthorizedError extends FlagForgeError {
     super('Unauthorized', 401, 'UNAUTHORIZED');
   }
 }
+
+export class ForbiddenError extends FlagForgeError {
+  constructor(message: string) {
+    super(message, 403, 'FORBIDDEN');
+  }
+}

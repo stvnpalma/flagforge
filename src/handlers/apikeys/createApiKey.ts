@@ -1,5 +1,6 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createApiKey } from '../../services/apikey.service';
+import { getProject } from '../../services/project.service';
 import { ValidationError } from '../../types/errors';
 import { created, errorResponse } from '../../utils/http';
 import { createLogger } from '../../utils/logger';
@@ -15,6 +16,8 @@ export const handler = async (
     if (!projectId) {
       throw new ValidationError('projectId path parameter is required');
     }
+
+    await getProject(projectId);
 
     const { rawKey, entity } = await createApiKey(projectId);
 
