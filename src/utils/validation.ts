@@ -59,7 +59,7 @@ export function requireBoolean(
 ): boolean {
   const value = body[field];
   if (typeof value !== 'boolean') {
-    throw new ValidationError(`$'{field}'is required and must be a boolean`);
+    throw new ValidationError(`'${field}' is required and must be a boolean`);
   }
   return value;
 }

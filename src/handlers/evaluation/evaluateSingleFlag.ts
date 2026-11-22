@@ -1,3 +1,4 @@
+import { assertProjectAccess } from '@src/utils/authContext';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { evaluateSingleFlag } from '../../services/evaluation.service';
 import { ValidationError } from '../../types/errors';
@@ -20,6 +21,9 @@ export const handler = async (
         'projectId, envId, and flagKey path parameters are required',
       );
     }
+
+    assertProjectAccess(event, projectId);
+
     const enabled = await evaluateSingleFlag(projectId, envId, flagKey);
     const response = ok({ flagKey, enabled });
 
@@ -32,7 +36,7 @@ export const handler = async (
     return response;
   } catch (error) {
     const response = errorResponse(error);
-    logger.info('evaluateSingleFlag failed', {
+    logger.error('evaluateSingleFlag failed', {
       path: event.path,
       method: event.httpMethod,
       statusCode: response.statusCode,

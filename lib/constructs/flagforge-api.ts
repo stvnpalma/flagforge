@@ -223,7 +223,7 @@ export class FlagForgeApi extends RestApi {
         handlerPath: 'apikeys/createApiKey.ts',
         table,
         description: 'Generates a new API key for a project',
-        dynamoActions: ['dynamodb:PutItem'],
+        dynamoActions: ['dynamodb:PutItem', 'dynamodb:GetItem'],
       },
     );
     apiKeys.addMethod('POST', new LambdaIntegration(createApiKeyFn), {

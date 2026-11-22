@@ -1,5 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
-import { Template } from 'aws-cdk-lib/assertions';
+import { Match, Template } from 'aws-cdk-lib/assertions';
 import { FlagforgeStack } from '../../lib/flagforge-stack';
 
 describe('FlagForgeApi construct', () => {
@@ -17,5 +17,19 @@ describe('FlagForgeApi construct', () => {
 
   it('outputs the API URL', () => {
     template.hasOutput('ApiUrl', {});
+  });
+
+  it('grants CreateApiKeyFunction only PutItem and GetItem on the table', () => {
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      Roles: [{ Ref: Match.stringLikeRegexp('^CreateApiKeyFunctionRole') }],
+      PolicyDocument: {
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Effect: 'Allow',
+            Action: ['dynamodb:PutItem', 'dynamodb:GetItem'],
+          }),
+        ]),
+      },
+    });
   });
 });

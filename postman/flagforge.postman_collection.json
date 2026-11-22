@@ -16,7 +16,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "https://bh78ow1udg.execute-api.us-east-1.amazonaws.com/prod",
+      "value": "https://<api-id>.execute-api.us-east-1.amazonaws.com/prod",
       "type": "string"
     },
     {
@@ -31,6 +31,11 @@
     },
     {
       "key": "envId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
       "value": "",
       "type": "string"
     }
@@ -152,14 +157,20 @@
           "name": "Evaluate All Flags",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/projects/{{projectId}}/environments/{{envId}}/evaluate"
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "x-api-key", "value": "{{apiKey}}" }],
+            "url": "{{baseUrl}}/projects/{{projectId}}/environments/{{envId}}/evaluate",
+            "description": "Returns every flag for the environment as { flagKey: boolean }. Auth: API key (x-api-key), not Cognito. Responses: 200 flag map (empty object for an unknown environment); 401 missing or invalid key; 403 the key belongs to a different project."
           }
         },
         {
           "name": "Evaluate Single Flag",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/projects/{{projectId}}/environments/{{envId}}/evaluate/dark-mode"
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "x-api-key", "value": "{{apiKey}}" }],
+            "url": "{{baseUrl}}/projects/{{projectId}}/environments/{{envId}}/evaluate/new-checkout-flow",
+            "description": "Returns { flagKey, enabled }. An unknown flag returns enabled false (fail closed). Auth: API key (x-api-key). Responses: 200; 400 missing path parameters; 401 missing or invalid key; 403 the key belongs to a different project."
           }
         }
       ]
@@ -169,15 +180,24 @@
       "item": [
         {
           "name": "Create API Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.apiKey) {",
+                  "  pm.collectionVariables.set('apiKey', body.data.apiKey);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api-keys",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"keyName\": \"Development Key\"\n}",
-              "options": { "raw": { "language": "json" } }
-            }
+            "url": "{{baseUrl}}/projects/{{projectId}}/api-keys",
+            "description": "Generates an evaluation API key for the project. The raw key is returned once and only its hash is stored; the test script saves it to the apiKey variable. Auth: Cognito JWT. Responses: 201 { apiKey, projectId, createdAt }; 400 missing projectId; 401 missing or invalid token; 404 project does not exist."
           }
         }
       ]

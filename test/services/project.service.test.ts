@@ -23,6 +23,8 @@ const mockProject: ProjectEntity = {
   entityType: 'PROJECT',
   PK: 'PROJECT#project-123',
   SK: 'METADATA',
+  GSI1PK: 'PROJECT',
+  GSI1SK: 'PROJECT#project-123',
   projectId: 'project-123',
   name: 'Test Project',
   createdAt: '2026-01-01T00:00:00.000Z',
@@ -125,6 +127,22 @@ describe('project service', () => {
       expect(projects).toEqual([]);
     });
 
-    test.todo('stores GSI1PK so listProjects can find the project');
+    test('stores GSI1PK and GSI1SK so listProjects can find the project', async () => {
+      ddbMock.on(PutCommand).resolves({});
+      const result = await createProject('FlagForge');
+      const calls = ddbMock.commandCalls(PutCommand);
+
+      expect(calls).toHaveLength(1);
+      const [call] = calls;
+      if (!call) {
+        throw new Error('expected exactly one PutCommand call');
+      }
+      const putInput = call.args[0].input;
+
+      expect(putInput.Item).toMatchObject({
+        GSI1PK: 'PROJECT',
+        GSI1SK: `PROJECT#${result.projectId}`,
+      });
+    });
   });
 });

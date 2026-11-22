@@ -1,6 +1,6 @@
 {
   "name": "flagforge",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "packageManager": "npm@11.14.1",
   "scripts": {
     "build": "tsc",

@@ -70,6 +70,20 @@ describe('apikey service', () => {
       ddbMock.on(PutCommand).rejects(new Error('boom'));
       await expect(createApiKey('project-123')).rejects.toThrow('boom');
     });
+    test('uses attribute_not_exists(PK) so an existing item cannot be overwritten', async () => {
+      ddbMock.on(PutCommand).resolves({});
+      await createApiKey('project-123');
+      const calls = ddbMock.commandCalls(PutCommand);
+
+      expect(calls).toHaveLength(1);
+      const [call] = calls;
+      if (!call) {
+        throw new Error('expected exactly one PutCommand call');
+      }
+      const putInput = call.args[0].input;
+
+      expect(putInput.ConditionExpression).toBe('attribute_not_exists(PK)');
+    });
   });
 
   describe('verifyApiKey()', () => {

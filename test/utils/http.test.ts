@@ -1,5 +1,6 @@
 import {
   FlagForgeError,
+  ForbiddenError,
   NotFoundError,
   ValidationError,
 } from '@src/types/errors';
@@ -52,6 +53,18 @@ describe('HTTP response helpers', () => {
       expect(JSON.parse(result.body)).toEqual({
         success: false,
         error: 'Invalid flag key',
+      });
+    });
+
+    it('maps ForbiddenError to 403', () => {
+      const result = errorResponse(
+        new ForbiddenError('API key does not belong to this project'),
+      );
+
+      expect(result.statusCode).toBe(403);
+      expect(JSON.parse(result.body)).toEqual({
+        success: false,
+        error: 'API key does not belong to this project',
       });
     });
 

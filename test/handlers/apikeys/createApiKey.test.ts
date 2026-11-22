@@ -1,9 +1,12 @@
 import { handler } from '@src/handlers/apikeys/createApiKey';
 import * as apiKeyService from '@src/services/apikey.service';
-import type { ApiKeyEntity } from '@src/types/entities';
+import * as projectService from '@src/services/project.service';
+import type { ApiKeyEntity, ProjectEntity } from '@src/types/entities';
+import { NotFoundError } from '@src/types/errors';
 import { makeEvent } from '../../setup/makeEvent';
 
 jest.mock('@src/services/apikey.service');
+jest.mock('@src/services/project.service');
 jest.mock('@src/utils/logger', () => ({
   createLogger: (): { info: jest.Mock; warn: jest.Mock; error: jest.Mock } => ({
     info: jest.fn(),
@@ -20,6 +23,7 @@ afterAll(() => {
 });
 
 const mockCreateApiKey = jest.mocked(apiKeyService.createApiKey);
+const mockGetProject = jest.mocked(projectService.getProject);
 
 const RAW_KEY = 'ffk_0123456789abcdef0123456789abcdef0123456789abcdef';
 
@@ -32,6 +36,18 @@ const mockEntity: ApiKeyEntity = {
   createdAt: '2026-01-01T00:00:00.000Z',
 };
 
+const mockProject: ProjectEntity = {
+  entityType: 'PROJECT',
+  PK: 'PROJECT#project-123',
+  SK: 'METADATA',
+  GSI1PK: 'PROJECT',
+  GSI1SK: 'PROJECT#project-123',
+  projectId: 'project-123',
+  name: 'Test Project',
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+};
+
 const postEvent = (): ReturnType<typeof makeEvent> =>
   makeEvent({
     httpMethod: 'POST',
@@ -40,6 +56,7 @@ const postEvent = (): ReturnType<typeof makeEvent> =>
 
 describe('createApiKey handler', () => {
   test('returns 201 with exactly the raw key, projectId and createdAt', async () => {
+    mockGetProject.mockResolvedValueOnce(mockProject);
     mockCreateApiKey.mockResolvedValueOnce({
       rawKey: RAW_KEY,
       entity: mockEntity,
@@ -57,10 +74,12 @@ describe('createApiKey handler', () => {
         createdAt: '2026-01-01T00:00:00.000Z',
       },
     });
+    expect(mockGetProject).toHaveBeenCalledWith('project-123');
     expect(mockCreateApiKey).toHaveBeenCalledWith('project-123');
   });
 
   test('never exposes the stored hash or table keys in the response', async () => {
+    mockGetProject.mockResolvedValueOnce(mockProject);
     mockCreateApiKey.mockResolvedValueOnce({
       rawKey: RAW_KEY,
       entity: mockEntity,
@@ -74,11 +93,37 @@ describe('createApiKey handler', () => {
     expect(response.body).not.toContain('METADATA');
   });
 
+  test('returns 404 and creates no key when the project does not exist', async () => {
+    mockGetProject.mockRejectedValueOnce(
+      new NotFoundError('Project project-123'),
+    );
+
+    const event = postEvent();
+    const response = await handler(event);
+
+    expect(response.statusCode).toBe(404);
+    expect(mockCreateApiKey).not.toHaveBeenCalled();
+  });
+
+  test('looks up the project from the path before creating the key', async () => {
+    mockGetProject.mockResolvedValueOnce(mockProject);
+    mockCreateApiKey.mockResolvedValueOnce({
+      rawKey: RAW_KEY,
+      entity: mockEntity,
+    });
+
+    const event = postEvent();
+    await handler(event);
+
+    expect(mockGetProject).toHaveBeenCalledWith('project-123');
+  });
+
   test('returns 400 when pathParameters is null', async () => {
     const event = makeEvent({ httpMethod: 'POST' });
     const response = await handler(event);
 
     expect(response.statusCode).toBe(400);
+    expect(mockGetProject).not.toHaveBeenCalled();
     expect(mockCreateApiKey).not.toHaveBeenCalled();
   });
 
@@ -87,10 +132,12 @@ describe('createApiKey handler', () => {
     const response = await handler(event);
 
     expect(response.statusCode).toBe(400);
+    expect(mockGetProject).not.toHaveBeenCalled();
     expect(mockCreateApiKey).not.toHaveBeenCalled();
   });
 
   test('returns 500 when the service throws an Error', async () => {
+    mockGetProject.mockResolvedValueOnce(mockProject);
     mockCreateApiKey.mockRejectedValueOnce(new Error('boom'));
 
     const event = postEvent();
@@ -100,6 +147,7 @@ describe('createApiKey handler', () => {
   });
 
   test('returns 500 when the service rejects with a non-Error value', async () => {
+    mockGetProject.mockResolvedValueOnce(mockProject);
     mockCreateApiKey.mockRejectedValueOnce('boom');
 
     const event = postEvent();

@@ -1,6 +1,7 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { evaluateFlags } from '../../services/evaluation.service';
 import { ValidationError } from '../../types/errors';
+import { assertProjectAccess } from '../../utils/authContext';
 import { errorResponse, ok } from '../../utils/http';
 import { createLogger } from '../../utils/logger';
 
@@ -19,6 +20,8 @@ export const handler = async (
         'projectId and envId path path parameters are required',
       );
     }
+
+    assertProjectAccess(event, projectId);
 
     const flags = await evaluateFlags(projectId, envId);
     const response = ok(flags);

@@ -28,7 +28,7 @@ export async function createApiKey(
     new PutCommand({
       TableName: TABLE_NAME,
       Item: entity,
-      ConditionExpression: 'attribute_not_exists(pk)',
+      ConditionExpression: 'attribute_not_exists(PK)',
     }),
   );
 

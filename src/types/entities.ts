@@ -2,6 +2,8 @@ export interface ProjectEntity {
   readonly entityType: 'PROJECT';
   readonly PK: `PROJECT#${string}`;
   readonly SK: 'METADATA';
+  readonly GSI1PK: 'PROJECT';
+  readonly GSI1SK: `PROJECT#${string}`;
   readonly projectId: string;
   readonly name: string;
   readonly createdAt: string;

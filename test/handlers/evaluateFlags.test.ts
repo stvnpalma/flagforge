@@ -4,19 +4,20 @@ import type { APIGatewayProxyEvent } from 'aws-lambda';
 
 jest.mock('@src/services/evaluation.service');
 
+const mockLogger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+
 jest.mock('@src/utils/logger', () => ({
-  createLogger: (): { info: jest.Mock; warn: jest.Mock; error: jest.Mock } => ({
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-  }),
+  createLogger: (): typeof mockLogger => mockLogger,
 }));
 
 const mockEvaluateFlags = jest.mocked(evaluationService.evaluateFlags);
 
+type AuthorizerContext = APIGatewayProxyEvent['requestContext']['authorizer'];
+
 function makeEvent(
   projectId: string | null,
   envId: string | null,
+  authorizer: AuthorizerContext = { projectId: 'project-123' },
 ): APIGatewayProxyEvent {
   return {
     body: null,
@@ -27,6 +28,7 @@ function makeEvent(
     queryStringParameters: null,
     requestContext: {
       requestId: 'test-request-id',
+      authorizer,
     } as APIGatewayProxyEvent['requestContext'],
     isBase64Encoded: false,
     multiValueHeaders: {},
@@ -52,5 +54,32 @@ describe('evaluateFlags handler', () => {
   it('returns 400 when path parameters are missing', async () => {
     const result = await handler(makeEvent(null, null));
     expect(result.statusCode).toBe(400);
+  });
+
+  it('returns 403 and evaluates nothing when the key belongs to another project', async () => {
+    const result = await handler(
+      makeEvent('project-123', 'env-456', { projectId: 'project-999' }),
+    );
+
+    expect(result.statusCode).toBe(403);
+    expect(mockEvaluateFlags).not.toHaveBeenCalled();
+  });
+
+  it('returns 403 and evaluates nothing when there is no authorizer context', async () => {
+    const result = await handler(makeEvent('project-123', 'env-456', null));
+
+    expect(result.statusCode).toBe(403);
+    expect(mockEvaluateFlags).not.toHaveBeenCalled();
+  });
+
+  it('logs a denied request with logger.error', async () => {
+    await handler(
+      makeEvent('project-123', 'env-456', { projectId: 'project-999' }),
+    );
+
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      'evaluateFlags failed',
+      expect.objectContaining({ statusCode: 403 }),
+    );
   });
 });
