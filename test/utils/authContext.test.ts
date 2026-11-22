@@ -32,7 +32,9 @@ describe('assertProjectAccess()', () => {
   test('allows the request when the key belongs to the path project', () => {
     const event = eventWithAuthorizer({ projectId: PATH_PROJECT_ID });
 
-    expect(() => assertProjectAccess(event, PATH_PROJECT_ID)).not.toThrow();
+    expect(() => {
+      assertProjectAccess(event, PATH_PROJECT_ID);
+    }).not.toThrow();
   });
 
   test.each(deniedContexts)(
@@ -40,17 +42,17 @@ describe('assertProjectAccess()', () => {
     (_description, authorizer) => {
       const event = eventWithAuthorizer(authorizer);
 
-      expect(() => assertProjectAccess(event, PATH_PROJECT_ID)).toThrow(
-        ForbiddenError,
-      );
+      expect(() => {
+        assertProjectAccess(event, PATH_PROJECT_ID);
+      }).toThrow(ForbiddenError);
     },
   );
 
   test('uses a message that does not reveal which project owns the key', () => {
     const event = eventWithAuthorizer({ projectId: 'project-999' });
 
-    expect(() => assertProjectAccess(event, PATH_PROJECT_ID)).toThrow(
-      'API key does not belong to this project',
-    );
+    expect(() => {
+      assertProjectAccess(event, PATH_PROJECT_ID);
+    }).toThrow('API key does not belong to this project');
   });
 });
